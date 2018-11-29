@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.dit.persistence.BoardDAO">
+	<select id="selectList" parameterType="map"
+		resultType="kr.ac.dit.domain.BoardVO">
+		select
+		no as "no",
+		writer as "writer",
+		title as "title",
+		content as "content",
+		createDate as "createDate",
+		readCount as
+		"readCount",
+		RNUM+1 as "seq" <!--  -->
+		from (
+		select no, writer, title, content, createDate, readCount, ROWNUM as RNUM <!-- ROWNUM은 넘버링을 해주는 것(오라클에서 제공) RNUM에 번호 부여 -->
+		from (
+		select * from board <!-- 제일 안쪽부터 먼저 실행(전체 게시글을 모두 읽어온다)  -->
+		order by no desc
+		)
+		)
+		where RNUM between #{start} and #{end} <!-- 60과 70을 주면 seq번호에서 61번부터 71번에 해당하는 게시글을 검색 -->
+	</select>
+	<insert id="insert" parameterType="kr.ac.dit.domain.BoardVO">
+		insert into board (no, writer,
+		title, content, createDate) values
+		(board_seq.nextval, #{writer},
+		#{title}, #{content}, SYSDATE)
+	</insert>
+	<insert id="insertFile"
+		parameterType="kr.ac.dit.domain.UploadFileVO">
+		insert into upload_file (file_id, file_name, file_data,
+		no) values
+		(#{fileId}, #{fileName}, #{fileData}, board_seq.currval)
+	</insert>
+	<select id="select" parameterType="int"
+		resultType="kr.ac.dit.domain.BoardVO">
+		select * from board where no = #{no}
+	</select>
+	<select id="selectMaxFileId" resultType="Integer">
+		select
+		NVL(max(file_id),0) from upload_file
+	</select>
+	<select id="selectAttachFile" parameterType="int"
+		resultType="kr.ac.dit.domain.UploadFileVO">
+		select
+		file_id as fileId,
+		file_name as fileName
+		from
+		upload_file where no = #{no}
+	</select>
+	<select id="selectDownloadFile" parameterType="int"
+		resultType="kr.ac.dit.domain.UploadFileVO">
+		select
+		file_name as fileName,
+		file_data as fileData
+		from
+		upload_file where file_id = #{fileId}
+	</select>
+	<select id="selectTotalArticleCount" resultType="int">
+		select count(no) as "count" from board <!-- 전체 게시글의 갯수 -->
+	</select>
+	<update id="update" parameterType="int">
+		update board set title =
+		#{title}, content = #{content} where no = #{no}
+	</update>
+	<delete id="delete" parameterType="int">
+		delete from board where no =
+		#{no}
+	</delete>
+</mapper>
